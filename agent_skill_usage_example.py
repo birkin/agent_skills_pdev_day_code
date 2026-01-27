@@ -289,6 +289,7 @@ When you receive function results, analyze them and either:
 
     def _parse_function(self, text: str) -> Optional[Dict]:
         """Extract {"function_call": {...}} from response. Only parse if at start."""
+        function_call: Optional[Dict] = None
         try:
             # Only look for function calls at the beginning of the response (first 100 chars)
             # This avoids parsing example function calls in explanatory text
@@ -296,26 +297,25 @@ When you receive function results, analyze them and either:
             cleaned: str = self._strip_think_prefix(text)
             search_text: str = cleaned[:200].strip()
 
-            if not search_text.startswith('{'):
-                return None
-
-            # Find the first complete JSON object
-            start = 0
-            brace_count = 0
-            for i in range(len(text)):
-                if text[i] == '{':
-                    brace_count += 1
-                elif text[i] == '}':
-                    brace_count -= 1
-                    if brace_count == 0:
-                        # Found complete JSON object
-                        json_str = text[start : i + 1]
-                        parsed = json.loads(json_str)
-                        return parsed.get('function_call')
+            if search_text.startswith('{'):
+                start: int = cleaned.find('{')
+                if start != -1:
+                    brace_count: int = 0
+                    for i in range(start, len(cleaned)):
+                        if cleaned[i] == '{':
+                            brace_count += 1
+                        elif cleaned[i] == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                # Found complete JSON object
+                                json_str: str = cleaned[start : i + 1]
+                                parsed = json.loads(json_str)
+                                function_call = parsed.get('function_call')
+                                break
         except Exception as e:
             print(f'Error parsing function call: {e}')
             pass
-        return None
+        return function_call
 
     def _execute(self, func: Dict) -> Dict:
         """Route function call to appropriate skill method."""
