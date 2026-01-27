@@ -14,7 +14,7 @@
 
 ## possible future experimentation
 
-The `agent_sill_usage_example.py` file, as written, does _not_ offer any kind of normal chatbot-like experience, unless pdf-extraction is mentioned. It steers any interaction strongly toward pdf-extraction. Second, as written, Agent.chat() doesn't maintain any memory.
+The `agent_skill_usage_example.py` file, as written, does _not_ offer any kind of normal chatbot-like experience, unless pdf-extraction is mentioned. It steers any interaction strongly toward pdf-extraction. Second, as written, Agent.chat() doesn't maintain any memory.
 
 It'd be fun to experiment with some ways (regex or LLM-as-judge) to have the skill only come into play when it seems appropriate.
 
@@ -238,7 +238,7 @@ Reading the deep-research answer: <https://chatgpt.com/share/6978d0bf-dedc-8006-
 
 It's better, in that it more specifically addresses my question about skill-files. It notes, at the end, `All three tutorials above use the open Agent Skills standard.` (<https://agentskills.io/home>)
 
-Going to dive into "Tutorial 1: “How to Write and Implement Agent Skills” (DigitalOcean Community)", because it focuses on parsing PDFs -- and we're actively working on PDF-accessibillity.
+Going to dive into "Tutorial 1: “How to Write and Implement Agent Skills” (DigitalOcean Community)", because it focuses on parsing PDFs -- and we're actively working on PDF-accessibility.
 
 ---
 

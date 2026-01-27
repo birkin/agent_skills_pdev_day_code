@@ -2,7 +2,7 @@
 
 Experiment with the new concept of using "skill" files for agents, for a professional-development day.
 
-[MCP][MCP] was the hot thing in early 2025, but in the Fall Anthropic [described][initial_description] a very simple lightweight "skill" architecture of plain markdown files that were extremely effective at giving LLMs useful additional abilites, without taking up lots of contextual prompt-tokens. They've since [built][more_on_skills] on that and made it a [standard-open-format][skills_spec].
+[MCP][MCP] was the hot thing in early 2025, but in the Fall Anthropic [described][initial_description] a very simple lightweight "skill" architecture of plain markdown files that were extremely effective at giving LLMs useful additional abilities, without taking up lots of contextual prompt-tokens. They've since [built][more_on_skills] on that and made it a [standard-open-format][skills_spec].
 
 A colleague and I learn about lots of this stuff together. He recently experimented with skills directly within the context of the claude-code-app, and I decided to devote my professional-development day to learning more about skills.
 
