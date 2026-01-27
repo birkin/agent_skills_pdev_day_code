@@ -30,4 +30,8 @@ For example, if you’d like to have your LLM create PowerPoint presentations, r
 In this tutorial, you will create an Agent Skill for a PDF parser with optional folders for other reference documentation and assets.
 ```
 
+I'm using a modified version of the example scripts at:
+<https://github.com/adugan-do/Agent-Skills/blob/main/skills/pdf-parsing/>
+
+...so I can use `uv`.
 
