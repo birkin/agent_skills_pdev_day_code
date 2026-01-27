@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import dotenv
-import requests
+import httpx
 
 dotenv.load_dotenv()
 
@@ -266,18 +266,35 @@ When you receive function results, analyze them and either:
                 'temperature': 0.7,
             }
 
-            resp = requests.post(self.api_url, headers=headers, json=data, timeout=30)
+            resp = httpx.post(self.api_url, headers=headers, json=data, timeout=30)
             resp.raise_for_status()
             return resp.json()['choices'][0]['message']['content'].strip()
         except Exception as e:
             return f'LLM Error: {e}'
+
+    @staticmethod
+    def _strip_think_prefix(text: str) -> str:
+        """
+        Removes a leading <think>...</think> block from model output.
+        Cleans qwen3-8b response.
+        """
+        cleaned: str = text.lstrip()
+        if cleaned.startswith('<think>'):
+            end_tag: str = '</think>'
+            end_idx: int = cleaned.find(end_tag)
+            if end_idx != -1:
+                cleaned = cleaned[end_idx + len(end_tag) :]
+        cleaned = cleaned.lstrip()
+        return cleaned
 
     def _parse_function(self, text: str) -> Optional[Dict]:
         """Extract {"function_call": {...}} from response. Only parse if at start."""
         try:
             # Only look for function calls at the beginning of the response (first 100 chars)
             # This avoids parsing example function calls in explanatory text
-            search_text = text[:200].strip()
+            # search_text = text[:200].strip()
+            cleaned: str = self._strip_think_prefix(text)
+            search_text: str = cleaned[:200].strip()
 
             if not search_text.startswith('{'):
                 return None
