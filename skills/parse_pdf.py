@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.12<3.13"
+# requires-python = ">=3.12,<3.13"
 # dependencies = [
 #     "pypdf2~=3.0.0",
 # ]
