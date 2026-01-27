@@ -12,7 +12,16 @@
 
 ## switching to LMStudio
 
-here
+I installed LMStudio, got familiar with it, and downloaded `qwen/qwen3-8b`. I updated the `.env` and `agent_example.py` to replace hardcoded variables with envars.
+
+I then ran the main code: `uv run ./agent_example.py`. It found the skill, and prompted me to use it. But when I entered the standard:
+```
+Please parse the text out of the PDF at "/path/to/CNI_2025_slides.pdf"
+```
+
+...the results were bad -- it didn't seem to try to extract the text, and seemed to quit early.
+
+Turns out qwen wraps a lot of its response in `<think></think>` tags -- and adding the cleaner function did the trick.
 
 ---
 
