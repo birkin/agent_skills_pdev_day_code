@@ -1,6 +1,7 @@
 # /// script
 # requires-python = ">=3.12<3.13"
 # dependencies = [
+#     "python-dotenv~=1.2.0",
 #     "requests~=2.32.0",
 # ]
 # ///
@@ -17,6 +18,7 @@ Agent executes them via internal function routing.
 
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -24,7 +26,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import dotenv
 import requests
+
+dotenv.load_dotenv()
 
 
 @dataclass
@@ -332,7 +337,7 @@ def main():
     print('=' * 60)
 
     # Setup
-    api_key = 'Add_Your_Inferrence_API_Key_Here'
+    api_key = os.environ['DIGITAL_OCEAN_MODEL_ACCESS_KEY']
 
     skills_dir = Path(__file__).parent / 'skills'
 
