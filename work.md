@@ -16,7 +16,7 @@
 
 The `agent_sill_usage_example.py` file, as written, does _not_ offer any kind of normal chatbot-like experience, unless pdf-extraction is mentioned. It steers any interaction strongly toward pdf-extraction. Second, as written, Agent.chat() doesn't maintain any memory.
 
-It'd be fun to experiment with some was (regex or LLM-as-judge) to have the skill only come into play when it seems appropriate.
+It'd be fun to experiment with some ways (regex or LLM-as-judge) to have the skill only come into play when it seems appropriate.
 
 ---
 
