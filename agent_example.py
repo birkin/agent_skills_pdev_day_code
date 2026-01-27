@@ -16,10 +16,9 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import dotenv
-import requests
+import httpx
 
 dotenv.load_dotenv()
 
@@ -36,12 +35,12 @@ class Skill:
 class SkillsManager:
     """Discovers and executes skills."""
 
-    def __init__(self, skills_dir: str):
+    def __init__(self, skills_dir: str) -> None:
         self.skills_dir = Path(skills_dir)
-        self.skills: Dict[str, Skill] = {}
-        self.cache: Dict[str, str] = {}
+        self.skills: dict[str, Skill] = {}
+        self.cache: dict[str, str] = {}
 
-    def discover(self) -> List[Skill]:
+    def discover(self) -> list[Skill]:
         """Find all SKILL.md files and parse metadata."""
         if not self.skills_dir.exists():
             return []
@@ -55,7 +54,7 @@ class SkillsManager:
 
         return list(self.skills.values())
 
-    def _parse(self, path: Path) -> Optional[Skill]:
+    def _parse(self, path: Path) -> Skill | None:
         """Extract name/description from YAML frontmatter."""
         try:
             text = path.read_text()
@@ -89,7 +88,7 @@ class SkillsManager:
         lines.append('</available_skills>')
         return '\n'.join(lines)
 
-    def activate(self, name: str) -> Optional[str]:
+    def activate(self, name: str) -> str | None:
         """Load full SKILL.md content (cached)."""
         if name not in self.skills:
             return None
@@ -97,7 +96,7 @@ class SkillsManager:
             self.cache[name] = self.skills[name].path.read_text()
         return self.cache[name]
 
-    def execute(self, name: str, action: str, **params) -> Dict:
+    def execute(self, name: str, action: str, **params: object) -> dict:
         """Execute skill action by dynamically importing and calling Python functions."""
         if name not in self.skills:
             return {'error': f"Skill '{name}' not found"}
@@ -116,7 +115,7 @@ class SkillsManager:
 
         return {'error': f"No executable found for action '{action}' in skill '{name}'"}
 
-    def _import_and_call(self, folder: Path, action: str, **params) -> Optional[Dict]:
+    def _import_and_call(self, folder: Path, action: str, **params: object) -> dict | None:
         """Dynamically import Python modules and call the action function."""
         # Find all Python files in the folder
         py_files = list(folder.glob('*.py'))
@@ -150,7 +149,7 @@ class SkillsManager:
 
         return None
 
-    def _run_script(self, folder: Path, action: str, **params) -> Optional[Dict]:
+    def _run_script(self, folder: Path, action: str, **params: object) -> dict | None:
         """Try to execute scripts as subprocess (fallback method)."""
         for script in [f'{action}.py', 'run.py', f'{action}.sh']:
             path = folder / script
@@ -206,12 +205,13 @@ When you receive function results, analyze them and either:
 - Call another function if needed (ONE function only)
 - Provide final answer with the actual results/data"""
 
-    def __init__(self, skills: SkillsManager, api_key: str):
+    def __init__(self, skills: SkillsManager, api_key: str | None, api_url: str, model_id: str):
         self.skills = skills
-        self.api_url = 'https://inference.do-ai.run/v1/chat/completions'
+        self.api_url = api_url
         self.api_key = api_key
+        self.model_id = model_id
         self.max_turns = 10
-        self.messages = []
+        self.messages: list[dict[str, str]] = []
 
     def chat(self, user_input: str) -> str:
         """Process user message with iterative function calling."""
@@ -253,26 +253,32 @@ When you receive function results, analyze them and either:
         return 'Max iterations reached. Please try again.'
 
     def _call_llm(self) -> str:
-        """HTTP POST to DigitalOcean Serverless Inference API."""
+        """HTTP POST to the LMStudio OpenAI-compatible endpoint."""
+        response_text = ''
         try:
             headers = {
                 'Content-Type': 'application/json',
-                'Authorization': f'Bearer {self.api_key}',
             }
+            if self.api_key:
+                headers['Authorization'] = f'Bearer {self.api_key}'
             data = {
-                'model': 'llama3.3-70b-instruct',
+                'model': self.model_id,
                 'messages': self.messages,
                 'max_tokens': 1000,
                 'temperature': 0.7,
             }
 
-            resp = requests.post(self.api_url, headers=headers, json=data, timeout=30)
+            resp = httpx.post(self.api_url, headers=headers, json=data, timeout=30.0)
             resp.raise_for_status()
-            return resp.json()['choices'][0]['message']['content'].strip()
-        except Exception as e:
-            return f'LLM Error: {e}'
+            response_text = resp.json()['choices'][0]['message']['content'].strip()
+        except httpx.HTTPError as exc:
+            response_text = f'LLM Error: {exc}'
+        except (KeyError, TypeError, ValueError) as exc:
+            response_text = f'LLM Error: Invalid response payload ({exc})'
 
-    def _parse_function(self, text: str) -> Optional[Dict]:
+        return response_text
+
+    def _parse_function(self, text: str) -> dict | None:
         """Extract {"function_call": {...}} from response. Only parse if at start."""
         try:
             # Only look for function calls at the beginning of the response (first 100 chars)
@@ -300,7 +306,7 @@ When you receive function results, analyze them and either:
             pass
         return None
 
-    def _execute(self, func: Dict) -> Dict:
+    def _execute(self, func: dict) -> dict:
         """Route function call to appropriate skill method."""
         name = func.get('name', '')
         args = func.get('arguments', {})
@@ -323,14 +329,17 @@ When you receive function results, analyze them and either:
         return result
 
 
-def main():
+def main() -> None:
     """Interactive demo."""
     print('=' * 60)
     print('SIMPLE TOOL-BASED SKILLS EXAMPLE')
     print('=' * 60)
 
     # Setup
-    api_key = os.environ['DIGITAL_OCEAN_MODEL_ACCESS_KEY']
+    api_base_url = os.environ.get('LMSTUDIO_BASE_URL', 'http://localhost:1234/v1')
+    api_url = f'{api_base_url.rstrip("/")}/chat/completions'
+    api_key = os.environ.get('LMSTUDIO_API_KEY')
+    model_id = os.environ.get('LMSTUDIO_MODEL', 'local-model')
 
     skills_dir = Path(__file__).parent / 'skills'
 
@@ -341,7 +350,7 @@ def main():
     for s in discovered:
         print(f'   - {s.name}: {s.description}')
 
-    agent = Agent(skills, api_key)
+    agent = Agent(skills, api_key, api_url, model_id)
 
     # Chat loop
     print('\n' + '=' * 60)
