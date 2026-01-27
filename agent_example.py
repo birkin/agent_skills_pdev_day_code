@@ -1,11 +1,3 @@
-# /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = [
-#     "python-dotenv~=1.2.0",
-#     "requests~=2.32.0",
-# ]
-# ///
-
 """
 Simplified Tool-Based Skills Workflow
 
