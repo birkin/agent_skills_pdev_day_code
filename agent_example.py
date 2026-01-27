@@ -295,7 +295,8 @@ When you receive function results, analyze them and either:
                         json_str = text[start : i + 1]
                         parsed = json.loads(json_str)
                         return parsed.get('function_call')
-        except:
+        except Exception as e:
+            print(f'Error parsing function call: {e}')
             pass
         return None
 
