@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import dotenv
-import requests
+import httpx
 
 dotenv.load_dotenv()
 
@@ -266,7 +266,7 @@ When you receive function results, analyze them and either:
                 'temperature': 0.7,
             }
 
-            resp = requests.post(self.api_url, headers=headers, json=data, timeout=30)
+            resp = httpx.post(self.api_url, headers=headers, json=data, timeout=30)
             resp.raise_for_status()
             return resp.json()['choices'][0]['message']['content'].strip()
         except Exception as e:
