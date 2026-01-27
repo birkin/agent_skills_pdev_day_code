@@ -16,7 +16,6 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import dotenv
 import httpx
@@ -38,10 +37,10 @@ class SkillsManager:
 
     def __init__(self, skills_dir: str):
         self.skills_dir = Path(skills_dir)
-        self.skills: Dict[str, Skill] = {}
-        self.cache: Dict[str, str] = {}
+        self.skills: dict[str, Skill] = {}
+        self.cache: dict[str, str] = {}
 
-    def discover(self) -> List[Skill]:
+    def discover(self) -> list[Skill]:
         """Find all SKILL.md files and parse metadata."""
         if not self.skills_dir.exists():
             return []
@@ -55,7 +54,7 @@ class SkillsManager:
 
         return list(self.skills.values())
 
-    def _parse(self, path: Path) -> Optional[Skill]:
+    def _parse(self, path: Path) -> Skill | None:
         """Extract name/description from YAML frontmatter."""
         try:
             text = path.read_text()
@@ -89,7 +88,7 @@ class SkillsManager:
         lines.append('</available_skills>')
         return '\n'.join(lines)
 
-    def activate(self, name: str) -> Optional[str]:
+    def activate(self, name: str) -> str | None:
         """Load full SKILL.md content (cached)."""
         if name not in self.skills:
             return None
@@ -97,7 +96,7 @@ class SkillsManager:
             self.cache[name] = self.skills[name].path.read_text()
         return self.cache[name]
 
-    def execute(self, name: str, action: str, **params) -> Dict:
+    def execute(self, name: str, action: str, **params) -> dict:
         """Execute skill action by dynamically importing and calling Python functions."""
         if name not in self.skills:
             return {'error': f"Skill '{name}' not found"}
@@ -116,7 +115,7 @@ class SkillsManager:
 
         return {'error': f"No executable found for action '{action}' in skill '{name}'"}
 
-    def _import_and_call(self, folder: Path, action: str, **params) -> Optional[Dict]:
+    def _import_and_call(self, folder: Path, action: str, **params) -> dict | None:
         """Dynamically import Python modules and call the action function."""
         # Find all Python files in the folder
         py_files = list(folder.glob('*.py'))
@@ -150,7 +149,7 @@ class SkillsManager:
 
         return None
 
-    def _run_script(self, folder: Path, action: str, **params) -> Optional[Dict]:
+    def _run_script(self, folder: Path, action: str, **params) -> dict | None:
         """Try to execute scripts as subprocess (fallback method)."""
         for script in [f'{action}.py', 'run.py', f'{action}.sh']:
             path = folder / script
@@ -287,9 +286,9 @@ When you receive function results, analyze them and either:
         cleaned = cleaned.lstrip()
         return cleaned
 
-    def _parse_function(self, text: str) -> Optional[Dict]:
+    def _parse_function(self, text: str) -> dict | None:
         """Extract {"function_call": {...}} from response. Only parse if at start."""
-        function_call: Optional[Dict] = None
+        function_call: dict | None = None
         try:
             # Only look for function calls at the beginning of the response (first 100 chars)
             # This avoids parsing example function calls in explanatory text
@@ -317,7 +316,7 @@ When you receive function results, analyze them and either:
             pass
         return function_call
 
-    def _execute(self, func: Dict) -> Dict:
+    def _execute(self, func: dict) -> dict:
         """Route function call to appropriate skill method."""
         name = func.get('name', '')
         args = func.get('arguments', {})
