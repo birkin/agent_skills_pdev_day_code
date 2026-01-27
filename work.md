@@ -1,18 +1,45 @@
-Reading: <https://developers.openai.com/tracks/building-agents/>, based on `OpenAI Agents SDK: tools-as-skills + “skill files” as local instruction modules` -- from the extended-thinking answer.
+# Work notes
 
-Reading: <https://openai.github.io/openai-agents-python/quickstart/> based on the above.
+(Note: sections are in reverse chronological order)
 
-Skimmed: <https://openai.github.io/openai-agents-python/agents/> based on the quickstart above.
+- [switching to LMStudio](#switching-to-lmstudio)
+- [following tutorial](#following-tutorial)
+- [choosing tutorial](#choosing-tutorial)
+- [skimming second skill-tutorial suggestions](#skimming-second-skill-tutorial-suggestions)
+- [(start) skimming first skill-tutorials suggestions](#start-skimming-first-skill-tutorials-suggestions)
+
+---
+
+## switching to LMStudio
+
+here
 
 ---
 
-Reading the deep-research answer: <https://chatgpt.com/share/6978d0bf-dedc-8006-a46f-2a0b88c06c17`> 
 
-It's better, in that it more specifically addresses my question about skill-files. It notes, at the end, `All three tutorials above use the open Agent Skills standard.` (<https://agentskills.io/home>)
+## following tutorial
 
-Going to dive into "Tutorial 1: “How to Write and Implement Agent Skills” (DigitalOcean Community)", because it focuses on parsing PDFs -- and we're actively working on PDF-accessibillity.
+Ok -- fully implemented the tutorial.
+
+Got a "model-access-key" from D.O.
+
+Set up a dotenv envar for the key.
+
+So the main initial work seems to be in setting up the script -- implementing the structure of the `skills/pdf-parsing/` folder, and the two files in it, `parse_pdf.py` and `SKILL.md`.
+
+I was able to verify the code via successfully running:
+```
+% uv run ./skills/pdf-parsing/parse_pdf.py extract_text --file_path "/path/to/CNI_2025_slides.pdf"
+```
+
+(...which runs the script -- no llm interaction)
+
+Then the second main piece of work is to instruct the llm to use the skill, via `agent_example.py`.
 
 ---
+
+
+## choosing tutorial
 
 The tutorial: <https://www.digitalocean.com/community/tutorials/how-to-implement-agent-skills>
 
@@ -35,3 +62,31 @@ I'm using a modified version of the example scripts at:
 
 ...so I can use `uv`.
 
+---
+
+
+## skimming second skill-tutorial suggestions
+
+Reading the deep-research answer: <https://chatgpt.com/share/6978d0bf-dedc-8006-a46f-2a0b88c06c17`> 
+
+It's better, in that it more specifically addresses my question about skill-files. It notes, at the end, `All three tutorials above use the open Agent Skills standard.` (<https://agentskills.io/home>)
+
+Going to dive into "Tutorial 1: “How to Write and Implement Agent Skills” (DigitalOcean Community)", because it focuses on parsing PDFs -- and we're actively working on PDF-accessibillity.
+
+---
+
+
+## (start) skimming first skill-tutorials suggestions
+
+Skimmed: <https://openai.github.io/openai-agents-python/agents/> based on the quickstart reading.
+
+Reading: <https://openai.github.io/openai-agents-python/quickstart/> based on the building-agents reading.
+
+Reading: <https://developers.openai.com/tracks/building-agents/>, based on `OpenAI Agents SDK: tools-as-skills + “skill files” as local instruction modules` -- from the extended-thinking answer.
+
+
+
+---
+
+
+---
