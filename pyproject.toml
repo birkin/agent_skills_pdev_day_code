@@ -1,0 +1,16 @@
+[project]
+name = "jira-stories-export-script"
+version = "0.0.0"
+description = "Exports Jira stories to a CSV file."
+readme = "https://github.com/Brown-University-Library/jira_stories_export_script/blob/main/README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pypdf2~=3.0.0",
+    "python-dotenv~=1.2.0",
+    "requests~=2.32.0",
+]
+
+[dependency-groups]
+local = []
+staging = []
+prod = []
