@@ -10,6 +10,7 @@ Agent executes them via internal function routing.
 
 import importlib.util
 import json
+import logging
 import os
 import re
 import subprocess
@@ -21,6 +22,15 @@ import dotenv
 import httpx
 
 dotenv.load_dotenv()
+
+
+logging.basicConfig(
+    level=logging.DEBUG if os.getenv('LOG_LEVEL') == 'DEBUG' else logging.INFO,
+    format='[%(asctime)s] %(levelname)s [%(module)s-%(funcName)s()::%(lineno)d] %(message)s',
+    datefmt='%d/%b/%Y %H:%M:%S',
+    # filename=log_file_path,
+)
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -35,8 +45,8 @@ class Skill:
 class SkillsManager:
     """Discovers and executes skills."""
 
-    def __init__(self, skills_dir: str):
-        self.skills_dir = Path(skills_dir)
+    def __init__(self, skills_dir: str) -> None:
+        self.skills_dir: Path = Path(skills_dir)
         self.skills: dict[str, Skill] = {}
         self.cache: dict[str, str] = {}
 
@@ -57,14 +67,14 @@ class SkillsManager:
     def _parse(self, path: Path) -> Skill | None:
         """Extract name/description from YAML frontmatter."""
         try:
-            text = path.read_text()
-            match = re.match(r'^---\s*\n(.*?)\n---', text, re.DOTALL)
+            text: str = path.read_text()
+            match: re.Match[str] | None = re.match(r'^---\s*\n(.*?)\n---', text, re.DOTALL)
             if not match:
                 return None
 
-            front = match.group(1)
-            name = re.search(r'name:\s*(.+)', front)
-            desc = re.search(r'description:\s*(.+)', front)
+            front: str = match.group(1)
+            name: re.Match[str] | None = re.search(r'name:\s*(.+)', front)
+            desc: re.Match[str] | None = re.search(r'description:\s*(.+)', front)
 
             if name and desc:
                 return Skill(name.group(1).strip(), desc.group(1).strip(), path)
@@ -77,7 +87,7 @@ class SkillsManager:
         if not self.skills:
             return ''
 
-        lines = ['<available_skills>']
+        lines: list[str] = ['<available_skills>']
         for s in self.skills.values():
             lines += [
                 '  <skill>',
@@ -96,7 +106,7 @@ class SkillsManager:
             self.cache[name] = self.skills[name].path.read_text()
         return self.cache[name]
 
-    def execute(self, name: str, action: str, **params) -> dict:
+    def execute(self, name: str, action: str, **params: object) -> dict[str, object]:
         """Execute skill action by dynamically importing and calling Python functions."""
         if name not in self.skills:
             return {'error': f"Skill '{name}' not found"}
@@ -115,10 +125,15 @@ class SkillsManager:
 
         return {'error': f"No executable found for action '{action}' in skill '{name}'"}
 
-    def _import_and_call(self, folder: Path, action: str, **params) -> dict | None:
+    def _import_and_call(
+        self,
+        folder: Path,
+        action: str,
+        **params: object,
+    ) -> dict[str, object] | None:
         """Dynamically import Python modules and call the action function."""
         # Find all Python files in the folder
-        py_files = list(folder.glob('*.py'))
+        py_files: list[Path] = list(folder.glob('*.py'))
 
         for py_file in py_files:
             if py_file.name.startswith('__'):
@@ -149,7 +164,12 @@ class SkillsManager:
 
         return None
 
-    def _run_script(self, folder: Path, action: str, **params) -> dict | None:
+    def _run_script(
+        self,
+        folder: Path,
+        action: str,
+        **params: object,
+    ) -> dict[str, object] | None:
         """Try to execute scripts as subprocess (fallback method)."""
         for script in [f'{action}.py', 'run.py', f'{action}.sh']:
             path = folder / script
@@ -166,7 +186,13 @@ class SkillsManager:
                 for k, v in params.items():
                     args.extend([f'--{k}', str(v)])
 
-                result = subprocess.run(args, capture_output=True, text=True, timeout=30, cwd=str(folder))
+                result: subprocess.CompletedProcess[str] = subprocess.run(
+                    args,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=str(folder),
+                )
                 try:
                     return json.loads(result.stdout)
                 except json.JSONDecodeError:
@@ -205,19 +231,19 @@ When you receive function results, analyze them and either:
 - Call another function if needed (ONE function only)
 - Provide final answer with the actual results/data"""
 
-    def __init__(self, skills: SkillsManager, api_key: str):
-        self.skills = skills
-        self.api_url = 'https://inference.do-ai.run/v1/chat/completions'
-        self.api_key = api_key
-        self.max_turns = 10
-        self.messages = []
+    def __init__(self, skills: SkillsManager, api_key: str) -> None:
+        self.skills: SkillsManager = skills
+        self.api_url: str = 'https://inference.do-ai.run/v1/chat/completions'
+        self.api_key: str = api_key
+        self.max_turns: int = 10
+        self.messages: list[dict[str, str]] = []
 
     def chat(self, user_input: str) -> str:
         """Process user message with iterative function calling."""
         print(f'\n{"=" * 60}\nUSER: {user_input}\n{"=" * 60}\n')
 
         # Initialize conversation with system prompt
-        system_msg = self.SYSTEM_PROMPT.format(skills=self.skills.to_xml())
+        system_msg: str = self.SYSTEM_PROMPT.format(skills=self.skills.to_xml())
         self.messages = [
             {'role': 'system', 'content': system_msg},
             {'role': 'user', 'content': user_input},
@@ -227,14 +253,14 @@ When you receive function results, analyze them and either:
             print(f'[Turn {turn + 1}]')
 
             # Call LLM
-            response = self._call_llm()
+            response: str = self._call_llm()
             print(f'💭 LLM: {response}\n')
 
             # Check for function call
-            func = self._parse_function(response)
+            func: dict[str, object] | None = self._parse_function(response)
             if func:
                 # Execute the function
-                result = self._execute(func)
+                result: dict[str, object] = self._execute(func)
 
                 # Add assistant response and function result to conversation
                 self.messages.append({'role': 'assistant', 'content': response})
@@ -254,18 +280,18 @@ When you receive function results, analyze them and either:
     def _call_llm(self) -> str:
         """HTTP POST to DigitalOcean Serverless Inference API."""
         try:
-            headers = {
+            headers: dict[str, str] = {
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {self.api_key}',
             }
-            data = {
+            data: dict[str, object] = {
                 'model': 'llama3.3-70b-instruct',
                 'messages': self.messages,
                 'max_tokens': 1000,
                 'temperature': 0.7,
             }
 
-            resp = httpx.post(self.api_url, headers=headers, json=data, timeout=30)
+            resp: httpx.Response = httpx.post(self.api_url, headers=headers, json=data, timeout=30)
             resp.raise_for_status()
             return resp.json()['choices'][0]['message']['content'].strip()
         except Exception as e:
@@ -286,9 +312,9 @@ When you receive function results, analyze them and either:
         cleaned = cleaned.lstrip()
         return cleaned
 
-    def _parse_function(self, text: str) -> dict | None:
+    def _parse_function(self, text: str) -> dict[str, object] | None:
         """Extract {"function_call": {...}} from response. Only parse if at start."""
-        function_call: dict | None = None
+        function_call: dict[str, object] | None = None
         try:
             # Only look for function calls at the beginning of the response (first 100 chars)
             # This avoids parsing example function calls in explanatory text
@@ -308,7 +334,7 @@ When you receive function results, analyze them and either:
                             if brace_count == 0:
                                 # Found complete JSON object
                                 json_str: str = cleaned[start : i + 1]
-                                parsed = json.loads(json_str)
+                                parsed: dict[str, object] = json.loads(json_str)
                                 function_call = parsed.get('function_call')
                                 break
         except Exception as e:
@@ -316,15 +342,15 @@ When you receive function results, analyze them and either:
             pass
         return function_call
 
-    def _execute(self, func: dict) -> dict:
+    def _execute(self, func: dict[str, object]) -> dict[str, object]:
         """Route function call to appropriate skill method."""
-        name = func.get('name', '')
-        args = func.get('arguments', {})
+        name: str = func.get('name', '')
+        args: dict[str, object] = func.get('arguments', {})
 
         print(f'🔧 {name}({json.dumps(args)})')
 
         if name == 'activate_skill':
-            content = self.skills.activate(args.get('skill_name', ''))
+            content: str | None = self.skills.activate(args.get('skill_name', ''))
             result = {'success': bool(content), 'instructions': content} if content else {'error': 'Not found'}
         elif name == 'execute_skill':
             result = self.skills.execute(
@@ -339,25 +365,27 @@ When you receive function results, analyze them and either:
         return result
 
 
-def main():
+def main() -> None:
     """Interactive demo."""
+    log.info('\nstarting main()\n')
     print('=' * 60)
     print('SIMPLE TOOL-BASED SKILLS EXAMPLE')
     print('=' * 60)
 
     # Setup
-    api_key = os.environ['DIGITAL_OCEAN_MODEL_ACCESS_KEY']
+    api_key: str = os.environ['DIGITAL_OCEAN_MODEL_ACCESS_KEY']
 
-    skills_dir = Path(__file__).parent / 'skills'
+    skills_dir: Path = Path(__file__).parent / 'skills'
+    log.debug(f'skills_dir, ``{skills_dir}``')
 
     # Initialize
-    skills = SkillsManager(str(skills_dir))
-    discovered = skills.discover()
+    skills: SkillsManager = SkillsManager(str(skills_dir))
+    discovered: list[Skill] = skills.discover()
     print(f'\n✅ Found {len(discovered)} skills:')
     for s in discovered:
         print(f'   - {s.name}: {s.description}')
 
-    agent = Agent(skills, api_key)
+    agent: Agent = Agent(skills, api_key)
 
     # Chat loop
     print('\n' + '=' * 60)
@@ -366,7 +394,7 @@ def main():
 
     while True:
         try:
-            user = input('\nYou: ').strip()
+            user: str = input('\nYou: ').strip()
             if user.lower() in ['quit', 'exit', 'q']:
                 break
             if user:
